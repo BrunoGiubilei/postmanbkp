@@ -9,8 +9,7 @@ load_dotenv()
 # Configurações
 POSTMAN_API_KEY = os.getenv("POSTMAN_API_KEY")
 REPO_PATH = "C:\Projetos\GitHub\postmanbkp"
-POSTMAN_WORKSPACE_ID = "SEU_WORKSPACE_ID"  # Opcional se quiser gerenciar por workspace
-CHECK_INTERVAL = 30  # Intervalo para verificar alterações (em segundos)
+CHECK_INTERVAL = 300  # Intervalo para verificar alterações (em segundos)
 
 # Cabeçalhos para a API do Postman
 HEADERS = {
@@ -51,6 +50,22 @@ def sync_repository():
     except subprocess.CalledProcessError as e:
         print(f"Erro ao sincronizar repositório: {e}")
 
+def import_to_postman(file_path):
+    """Importa um arquivo JSON para o Postman."""
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            collection_data = file.read()
+
+        url = "https://api.getpostman.com/collections"
+        response = requests.post(url, headers=HEADERS, data=collection_data)
+
+        if response.status_code == 200:
+            print(f"Arquivo '{file_path}' importado com sucesso para o Postman.")
+        else:
+            print(f"Erro ao importar '{file_path}': {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"Erro ao importar coleção: {e}")
+
 def pull_and_import():
     """Atualiza o repositório local e importa as alterações para o Postman."""
     try:
@@ -58,10 +73,8 @@ def pull_and_import():
         for file_name in os.listdir(REPO_PATH):
             if file_name.endswith(".json"):
                 file_path = os.path.join(REPO_PATH, file_name)
-                with open(file_path, "r", encoding="utf-8") as file:
-                    data = file.read()
-                # Aqui você poderia implementar lógica para importar automaticamente para o Postman, caso necessário.
-                print(f"Arquivo '{file_name}' pronto para importação.")
+                print(f"Importando '{file_name}' para o Postman...")
+                import_to_postman(file_path)
     except subprocess.CalledProcessError as e:
         print(f"Erro ao atualizar repositório: {e}")
 
@@ -72,7 +85,7 @@ def main():
         export_collections()
         print("Sincronizando com o repositório...")
         sync_repository()
-        print("Verificando novas alterações no repositório...")
+        print("Verificando novas alterações no repositório e importando para o Postman...")
         pull_and_import()
         print(f"Aguardando {CHECK_INTERVAL} segundos até a próxima verificação...")
         time.sleep(CHECK_INTERVAL)
